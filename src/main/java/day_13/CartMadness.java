@@ -72,24 +72,20 @@ public class CartMadness {
     }
 
     public MineCart identifyFirstCollision() {
-        boolean collision = false;
-        while (!collision) {
+        while (true) {
             carts.sort(Comparator.comparingInt(MineCart::getY).thenComparing(MineCart::getX));
             final char[][] currentMap = copyArray(baseMap);
             for (final MineCart cart : carts) {
                 move(cart);
-                if (collision = hasCollided(cart)) {
+                if (hasCollided(cart) != null) {
                     return cart;
                 }
                 currentMap[cart.getY()][cart.getX()] = cart.getDirection();
             }
-//            printMap(currentMap);
         }
-        return new MineCart();
     }
 
     public MineCart identifyLastCart() {
-        int ticks = 0;
         while (carts.size() > 1) {
             carts.sort(Comparator.comparingInt(MineCart::getY).thenComparing(MineCart::getX));
             final List<MineCart> collisionList = new ArrayList<>();
@@ -97,31 +93,21 @@ public class CartMadness {
             final char[][] currentMap = copyArray(baseMap);
             for (final MineCart cart : carts) {
                 move(cart);
-                if (hasCollided(cart)) {
+                MineCart collisionCart;
+                if ((collisionCart = hasCollided(cart)) != null) {
                     collisionList.add(cart);
+                    collisionList.add(collisionCart);
                     currentMap[cart.getY()][cart.getX()] = baseMap[cart.getY()][cart.getX()];
-                    System.out.println(cart.getX() + ", " + cart.getY());
                 } else {
                     currentMap[cart.getY()][cart.getX()] = cart.getDirection();
                 }
             }
+
             if (collisionList.size() > 0) {
-                final List<MineCart> cartsToRemove = new ArrayList<>();
-                for (final MineCart collisionCart : collisionList) {
-                    for (final MineCart cart : carts) {
-                        if (!cart.equals(collisionCart) && cart.locationEquals(collisionCart)) {
-                            cartsToRemove.add(cart);
-                            cartsToRemove.add(collisionCart);
-                        }
-                    }
-                }
-                System.out.println(ticks);
-                carts.removeAll(cartsToRemove);
-//                printMap(currentMap);
+                carts.removeAll(collisionList);
             }
-            ticks++;
         }
-//        System.out.println(ticks);
+
         return carts.get(0);
     }
 
@@ -203,23 +189,13 @@ public class CartMadness {
         return "^v".indexOf(direction) != -1;
     }
 
-    private boolean hasCollided(final MineCart cart) {
-        boolean hasCollided = false;
+    private MineCart hasCollided(final MineCart cart) {
         for (final MineCart c : carts) {
             if (c.locationEquals(cart) && !c.equals(cart)) {
-                hasCollided = true;
+                return c;
             }
         }
-        return hasCollided;
-    }
-
-    private void printMap(final char[][] currentMap) {
-        for (int i = 0; i < currentMap.length; i++) {
-            for (int j = 0; j < currentMap[i].length; j++) {
-                System.out.print(currentMap[i][j]);
-            }
-            System.out.println();
-        }
+        return null;
     }
 
     private char[][] copyArray(final char[][] toCopy) {
@@ -233,7 +209,6 @@ public class CartMadness {
     public List<MineCart> getCarts() {
         return this.carts;
     }
-
 
     public static void main(String[] args) throws IOException {
         final List<String> lines = FileUtils.readLines(new File("src/main/resources/13_input.txt"), "UTF-8");
